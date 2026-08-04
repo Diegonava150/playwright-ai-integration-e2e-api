@@ -11,23 +11,20 @@ test.describe('Authentication (E2E)', () => {
     await auth.deleteAccount();
   });
 
-  test('login with invalid credentials shows an error', async ({ auth }) => {
+  test('login with invalid credentials shows an error @smoke', async ({ auth }) => {
     await auth.open();
     await auth.login(INVALID_CREDENTIALS.email, INVALID_CREDENTIALS.password);
     await auth.expectLoginError();
   });
 
-  test('a registered user can log in and log out', async ({ auth, home }) => {
-    const user = makeUser();
-    await auth.register(user);
-    await auth.logout();
-
-    // Log back in with the same credentials.
+  test('a registered user can log in and log out', async ({ auth, registeredUser }) => {
+    // Account is provisioned via API by the `registeredUser` fixture, which also
+    // deletes it in teardown — so this test focuses purely on the login flow and
+    // never leaks an account, even if an assertion below fails.
     await auth.open();
-    await auth.login(user.email, user.password);
-    await expect(auth.loggedInAs(user.name)).toBeVisible();
-
-    // Cleanup.
-    await auth.deleteAccount();
+    await auth.login(registeredUser.email, registeredUser.password);
+    await expect(auth.loggedInAs(registeredUser.name)).toBeVisible();
+    await auth.logout();
+    await expect(auth.loggedInAs(registeredUser.name)).toBeHidden();
   });
 });

@@ -61,14 +61,10 @@ console.log('[test:ai:oauth] Running AI suite with OAuth token from ant...');
 const childEnv: NodeJS.ProcessEnv = { ...process.env, ANTHROPIC_AUTH_TOKEN: token };
 delete childEnv.ANTHROPIC_API_KEY;
 
-const result = spawnSync(
-  'npx',
-  ['playwright', 'test', '--project=ai', ...extraArgs],
-  {
-    stdio: 'inherit',
-    shell: true, // resolves npx / npx.cmd on Windows
-    env: childEnv,
-  },
-);
+const result = spawnSync('npx', ['playwright', 'test', '--project=ai', ...extraArgs], {
+  stdio: 'inherit',
+  shell: true, // resolves npx / npx.cmd on Windows
+  env: childEnv,
+});
 
 process.exit(result.status ?? 1);

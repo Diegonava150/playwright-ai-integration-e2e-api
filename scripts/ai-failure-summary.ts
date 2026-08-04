@@ -9,14 +9,18 @@
  *   npm test            # produces test-results/results.json
  *   npm run ai:summary  # writes ai-summary.md (and echoes it)
  *
- * In CI it is a no-op (prints a notice) when ANTHROPIC_API_KEY is absent, so it
- * never breaks the pipeline.
+ * In CI it degrades gracefully (prints a plain list) when no Claude credentials
+ * are present, so it never breaks the pipeline.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { askText, hasCredentials } from '../src/ai/claude-client.js';
 
 const REPORT_PATH = 'test-results/results.json';
 const OUT_PATH = 'ai-summary.md';
+
+// Strip ANSI color codes from error text. Built via RegExp (not a literal) to
+// avoid embedding a control character in source.
+const ANSI_COLOR = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
 
 interface FailedTest {
   title: string;
@@ -33,12 +37,13 @@ function collectFailures(report: any): FailedTest[] {
       for (const t of spec.tests ?? []) {
         const results = t.results ?? [];
         const last = results[results.length - 1];
-        const ok = t.status === 'expected' || last?.status === 'passed';
-        if (!ok) {
+        // Playwright test.status is expected|unexpected|flaky|skipped.
+        // Only `unexpected` is a real failure (skipped/flaky are not).
+        if (t.status === 'unexpected') {
           const errText = (last?.errors ?? [])
             .map((e: any) => e.message ?? '')
             .join('\n')
-            .replace(/\[[0-9;]*m/g, '') // strip ANSI colors
+            .replace(ANSI_COLOR, '')
             .slice(0, 1500);
           failures.push({
             title: spec.title,

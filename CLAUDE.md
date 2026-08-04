@@ -41,17 +41,31 @@ both **E2E** (browser) and **API** flows, with AI woven in at four points:
 
 ```
 src/ai/        Claude client (shared) + aiExpect helper
-src/api/       Typed API client
+src/api/       Typed API client (zod-validated responses)
 src/pages/     Page Objects (base, home, auth, products, cart, checkout)
 src/data/      Test-data factories
-src/fixtures/  test.ts — extends Playwright test with POMs + api + ai
-tests/e2e/     Browser workflows
+src/fixtures/  test.ts — POMs + api + ai + registeredUser; paths.ts
+src/global-setup.ts   Site health-check (fail fast if the target is down)
+tests/setup/   auth.setup.ts (provision + storageState) + auth.teardown.ts (delete)
 tests/api/     Pure API specs
+tests/e2e/     Anonymous browser workflows
+tests/e2e-auth/ Pre-authenticated flows (reuse shared storageState)
 tests/hybrid/  API + UI cross-verification
+tests/a11y/    Accessibility (axe, known-issues baseline)
 tests/ai/      LLM-assertion demos (@ai)
+tests/visual/  Pixel-diff visual regression (VISUAL=1)
 prompts/       AI test-generation / healing prompts
-scripts/       AI CI failure summarizer
+scripts/       AI CI failure summarizer + OAuth test runner
 ```
+
+Conventions added since the base guide:
+
+- For a test that needs its own account, use the **`registeredUser`** fixture
+  (API-provisioned; auto-deleted in teardown, even on failure). For flows that
+  just need "a logged-in user", put the spec in **`tests/e2e-auth/`** — the
+  context is already authenticated via shared `storageState`; don't register.
+- Tag critical-path tests **`@smoke`**; broad flows **`@regression`**.
+- Run `npm run lint` / `npm run typecheck` before finishing; both must pass.
 
 ## Site facts (verify with MCP before relying on them)
 
@@ -70,6 +84,7 @@ scripts/       AI CI failure summarizer
 
 The MCP server (`@playwright/mcp`) lets you open pages, snapshot the accessibility
 tree, click, and read the real DOM. Recommended loop when authoring a new test:
+
 1. Navigate to the target page and take a snapshot.
 2. Confirm the selectors in the relevant Page Object still match.
 3. Write/adjust the POM, then the spec, following the conventions above.

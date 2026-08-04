@@ -6,14 +6,22 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  SHARD_TOTAL: 2
+
 jobs:
   test:
+    name: Tests (shard ${{ matrix.shard }}/2)
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -24,33 +32,96 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run API + E2E + Hybrid suites
-        run: npx playwright test --project=api --project=e2e --project=hybrid
+      - name: Run suites (sharded, blob report)
+        run: >
+          npx playwright test
+          --project=api --project=e2e --project=e2e-auth --project=hybrid --project=a11y
+          --reporter=blob
+          --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }}
 
-      # AI failure triage. Runs on failure; needs the secret to actually call
-      # Claude, otherwise it prints a plain list and exits 0 (never blocks CI).
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 7
+
+  merge:
+    name: Merge reports + AI triage
+    if: always()
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v5
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge into HTML + JSON report
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
+        run: npx playwright merge-reports --config playwright.config.ts ./all-blob-reports
+
+      - name: Upload merged HTML report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      # AI failure triage — reuses scripts/ai-failure-summary.ts. Needs the secret
+      # to call Claude; otherwise it emits a plain failure list and exits 0.
       - name: AI failure summary
         if: always()
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: npm run ai:summary
 
-      - name: Publish AI summary to job step summary
+      - name: Add AI summary to job summary
         if: always()
         run: cat ai-summary.md >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 14
-
       - name: Upload AI summary
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ai-summary
           path: ai-summary.md
           retention-days: 14
+
+      # Post the AI triage as a PR comment (upsert by a hidden marker).
+      - name: Comment AI summary on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- ai-test-summary -->';
+            let body = marker + '\n';
+            try { body += fs.readFileSync('ai-summary.md', 'utf8'); }
+            catch { body += '# AI Test Summary\n\n_No summary produced._'; }
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            body += `\n\n[Full HTML report & traces →](${runUrl})`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

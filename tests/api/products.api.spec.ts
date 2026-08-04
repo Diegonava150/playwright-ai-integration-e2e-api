@@ -2,7 +2,7 @@ import { test, expect } from '../../src/fixtures/test.js';
 import { expectResponseCode } from '../../src/api/api-client.js';
 
 test.describe('Products API', () => {
-  test('GET /api/productsList returns a populated catalog', async ({ api }) => {
+  test('GET /api/productsList returns a populated catalog @smoke', async ({ api }) => {
     const { responseCode, products } = await api.getAllProducts();
     expect(responseCode).toBe(200);
     expect(products.length).toBeGreaterThan(0);
@@ -28,9 +28,13 @@ test.describe('Products API', () => {
   });
 
   test('GET /api/brandsList returns brands', async ({ api }) => {
-    const brands = await api.getBrands();
-    expectResponseCode(brands, 200);
-    expect((brands.raw as any).brands.length).toBeGreaterThan(0);
+    const { responseCode, brands } = await api.getBrands();
+    expect(responseCode).toBe(200);
+    expect(brands.length).toBeGreaterThan(0);
+    expect(brands[0]).toMatchObject({
+      id: expect.any(Number),
+      brand: expect.any(String),
+    });
   });
 
   test('DELETE /api/productsList is not allowed (405)', async ({ api }) => {

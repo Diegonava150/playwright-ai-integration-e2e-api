@@ -1,17 +1,28 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type Project } from '@playwright/test';
 import dotenv from 'dotenv';
+import { AUTH_STATE_FILE } from './src/fixtures/paths.js';
 
 // Load ANTHROPIC_API_KEY (and optional overrides) from .env for local runs.
 dotenv.config();
 
 export const BASE_URL = process.env.BASE_URL ?? 'https://www.automationexercise.com';
 
-/**
- * The reporters are chosen to feed the AI layer:
- *  - `html`  : human-facing report + traces
- *  - `list`  : live console output
- *  - `json`  : machine-readable results that scripts/ai-failure-summary.ts consumes
- */
+const chrome = devices['Desktop Chrome'];
+
+// Cross-browser and visual projects are opt-in (they need extra browser installs
+// / baseline snapshots) so the default `npm test` stays fast and green.
+const crossBrowser: Project[] = process.env.CROSS_BROWSER
+  ? [
+      { name: 'firefox', testDir: './tests/e2e', use: { ...devices['Desktop Firefox'] } },
+      { name: 'webkit', testDir: './tests/e2e', use: { ...devices['Desktop Safari'] } },
+      { name: 'mobile', testDir: './tests/e2e', use: { ...devices['Pixel 5'] } },
+    ]
+  : [];
+
+const visual: Project[] = process.env.VISUAL
+  ? [{ name: 'visual', testDir: './tests/visual', use: { ...chrome } }]
+  : [];
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -21,6 +32,9 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 10_000 },
 
+  // Fail fast if the target site is down.
+  globalSetup: './src/global-setup.ts',
+
   reporter: [
     ['list'],
     ['html', { open: 'never', outputFolder: 'playwright-report' }],
@@ -29,36 +43,53 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     actionTimeout: 15_000,
-    // automationexercise occasionally serves interstitial ads; ignore https noise.
     ignoreHTTPSErrors: true,
   },
 
   projects: [
+    // --- auth lifecycle: provision a shared user, capture session, delete after ---
     {
-      name: 'api',
-      testDir: './tests/api',
+      name: 'setup',
+      testDir: './tests/setup',
+      testMatch: /auth\.setup\.ts/,
+      teardown: 'cleanup',
       use: { baseURL: BASE_URL },
     },
     {
-      name: 'e2e',
-      testDir: './tests/e2e',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'cleanup',
+      testDir: './tests/setup',
+      testMatch: /auth\.teardown\.ts/,
+      use: { baseURL: BASE_URL },
     },
+
+    // --- pure API (no browser needed) ---
+    { name: 'api', testDir: './tests/api', use: { baseURL: BASE_URL } },
+
+    // --- anonymous browser flows ---
+    { name: 'e2e', testDir: './tests/e2e', use: { ...chrome } },
+
+    // --- pre-authenticated browser flows (reuse the shared session) ---
     {
-      name: 'hybrid',
-      testDir: './tests/hybrid',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'e2e-auth',
+      testDir: './tests/e2e-auth',
+      dependencies: ['setup'],
+      use: { ...chrome, storageState: AUTH_STATE_FILE },
     },
-    {
-      // AI-assertion demos live here; run explicitly with `npm run test:ai`
-      // (they require ANTHROPIC_API_KEY, so they are not part of the default gate).
-      name: 'ai',
-      testDir: './tests/ai',
-      use: { ...devices['Desktop Chrome'] },
-    },
+
+    // --- API + UI cross-verification ---
+    { name: 'hybrid', testDir: './tests/hybrid', use: { ...chrome } },
+
+    // --- accessibility (axe) ---
+    { name: 'a11y', testDir: './tests/a11y', use: { ...chrome } },
+
+    // --- AI-assertion demos (@ai). Needs Claude credentials; opt-in. ---
+    { name: 'ai', testDir: './tests/ai', use: { ...chrome } },
+
+    ...crossBrowser,
+    ...visual,
   ],
 });

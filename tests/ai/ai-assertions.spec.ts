@@ -33,7 +33,6 @@ test.describe('AI-backed assertions @ai', () => {
 
   test('the cart page reflects an added item in natural language', async ({
     products,
-    cart,
     ai,
   }) => {
     await products.open();

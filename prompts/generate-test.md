@@ -5,11 +5,13 @@ every convention there. Use the Playwright MCP server to inspect the live site
 and confirm selectors before writing code — do not guess DOM structure.
 
 ## Inputs
+
 - **Scenario** (fill in): _e.g. "A logged-in user removes an item from the cart
   and the cart total updates."_
 - **Layer**: e2e | api | hybrid | ai
 
 ## Steps
+
 1. If a Page Object or API method for this flow is missing, add it to
    `src/pages/` or `src/api/api-client.ts` first — keep specs declarative.
 2. Drive the flow once via MCP to capture the real selectors / response shapes.
@@ -20,11 +22,13 @@ and confirm selectors before writing code — do not guess DOM structure.
 6. Run `npx playwright test <new-file>` and iterate until green.
 
 ## Output
+
 - The new/updated Page Object or API method (if any).
 - The spec file.
 - The exact command to run it.
 
 ## Guardrails
+
 - Unique users via `makeUser()`; clean up accounts you create.
 - No hard-coded credentials or waits for fixed times; use web-first assertions.
 - Keep AI assertions opt-in and tagged `@ai`.

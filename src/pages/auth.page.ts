@@ -13,9 +13,7 @@ export class AuthPage extends BasePage {
 
   async open(): Promise<void> {
     await this.goto('/login');
-    await expect(
-      this.page.locator('h2', { hasText: 'New User Signup!' }),
-    ).toBeVisible();
+    await expect(this.page.locator('h2', { hasText: 'New User Signup!' })).toBeVisible();
   }
 
   // ---- Signup step 1: name + email ----
@@ -53,9 +51,9 @@ export class AuthPage extends BasePage {
   }
 
   async expectAccountCreated(): Promise<void> {
-    await expect(
-      this.page.locator('h2[data-qa="account-created"]'),
-    ).toContainText('Account Created');
+    await expect(this.page.locator('h2[data-qa="account-created"]')).toContainText(
+      'Account Created',
+    );
     await this.page.click('a[data-qa="continue-button"]');
   }
 
@@ -84,9 +82,9 @@ export class AuthPage extends BasePage {
   /** Deletes the current account (cleanup for registration tests). */
   async deleteAccount(): Promise<void> {
     await this.page.click('a[href="/delete_account"]');
-    await expect(
-      this.page.locator('h2[data-qa="account-deleted"]'),
-    ).toContainText('Account Deleted');
+    await expect(this.page.locator('h2[data-qa="account-deleted"]')).toContainText(
+      'Account Deleted',
+    );
     await this.page.click('a[data-qa="continue-button"]');
   }
 }

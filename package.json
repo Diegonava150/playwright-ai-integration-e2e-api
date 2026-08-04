@@ -7,25 +7,58 @@
   "scripts": {
     "test": "playwright test",
     "test:e2e": "playwright test --project=e2e",
+    "test:e2e:auth": "playwright test --project=e2e-auth",
     "test:api": "playwright test --project=api",
     "test:hybrid": "playwright test --project=hybrid",
+    "test:a11y": "playwright test --project=a11y",
     "test:ai": "playwright test --grep @ai",
     "test:ai:oauth": "tsx scripts/run-ai-oauth.ts",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:cross": "cross-env CROSS_BROWSER=1 playwright test --project=firefox --project=webkit --project=mobile",
+    "test:visual": "cross-env VISUAL=1 playwright test --project=visual",
+    "test:visual:update": "cross-env VISUAL=1 playwright test --project=visual --update-snapshots",
     "test:headed": "playwright test --project=e2e --headed",
     "test:ui": "playwright test --ui",
     "report": "playwright show-report",
     "ai:summary": "tsx scripts/ai-failure-summary.ts",
     "codegen": "playwright codegen https://www.automationexercise.com",
-    "install:browsers": "playwright install --with-deps chromium"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky || true",
+    "install:browsers": "playwright install --with-deps"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.4.7",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-playwright": "^2.11.0",
+    "globals": "^15.15.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.9.6",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.66.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0"
+    "@anthropic-ai/sdk": "^0.115.0",
+    "zod": "^3.25.76"
   }
 }

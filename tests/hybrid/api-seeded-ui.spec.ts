@@ -24,10 +24,7 @@ test.describe('API + UI cross-verification (Hybrid)', () => {
     expect(await products.count()).toBeGreaterThan(0);
   });
 
-  test('API search count is consistent with the UI grid', async ({
-    api,
-    products,
-  }) => {
+  test('API search count is consistent with the UI grid', async ({ api, products }) => {
     const term = 'top';
 
     const apiResult = await api.searchProduct(term);

@@ -1,7 +1,7 @@
 import { test, expect } from '../../src/fixtures/test.js';
 
 test.describe('Product browsing & search (E2E)', () => {
-  test('the products page lists a grid of products', async ({ products }) => {
+  test('the products page lists a grid of products @smoke', async ({ products }) => {
     await products.open();
     expect(await products.count()).toBeGreaterThan(0);
   });

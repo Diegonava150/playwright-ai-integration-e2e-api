@@ -15,7 +15,12 @@
       "Bash(sleep 3; cat \"C:\\\\Users\\\\diego\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-diego-Music-playwright-ai-integration-e2e-api\\\\60350cb7-aaeb-4660-ac9f-d0025a473827\\\\tasks\\\\brwow3n0c.output\" 2>/dev/null | tail -3; echo \"---\"; ls \"$HOME/AppData/Local/ms-playwright\" 2>/dev/null | grep -i chromium | head)",
       "Read(//c/Users/diego/AppData/Local/ms-playwright/**)",
       "Bash(npm run *)",
-      "Bash(echo \"test exit: $?\")"
+      "Bash(echo \"test exit: $?\")",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('./package.json'\\).scripts\\).join\\(', '\\)\\)\")",
+      "Bash(npx prettier *)",
+      "Bash(npx eslint *)",
+      "Bash(xargs cat)",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\).on\\('end',\\(\\)=>{try{const v=JSON.parse\\(d\\);console.log\\('total violations:',v.length\\);const crit=v.filter\\(x=>x.impact==='critical'\\);console.log\\('critical:',crit.length\\);crit.forEach\\(x=>console.log\\(' -',x.id,'|',x.nodes.length,'nodes |',x.help\\)\\);}catch\\(e\\){console.log\\('parse err / no file'\\)}}\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\diego\\Music\\playwright-ai-integration-e2e-api\\.claude"

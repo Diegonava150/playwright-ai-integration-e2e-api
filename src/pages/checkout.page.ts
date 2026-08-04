@@ -7,12 +7,8 @@ export class CheckoutPage extends BasePage {
   }
 
   async expectAddressReview(): Promise<void> {
-    await expect(
-      this.page.locator('h2', { hasText: 'Address Details' }),
-    ).toBeVisible();
-    await expect(
-      this.page.locator('h2', { hasText: 'Review Your Order' }),
-    ).toBeVisible();
+    await expect(this.page.locator('h2', { hasText: 'Address Details' })).toBeVisible();
+    await expect(this.page.locator('h2', { hasText: 'Review Your Order' })).toBeVisible();
   }
 
   async addComment(comment: string): Promise<void> {

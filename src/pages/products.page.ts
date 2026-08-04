@@ -8,9 +8,7 @@ export class ProductsPage extends BasePage {
 
   async open(): Promise<void> {
     await this.goto('/products');
-    await expect(
-      this.page.locator('h2', { hasText: 'All Products' }),
-    ).toBeVisible();
+    await expect(this.page.locator('h2', { hasText: 'All Products' })).toBeVisible();
   }
 
   productCards(): Locator {
@@ -20,9 +18,7 @@ export class ProductsPage extends BasePage {
   async search(term: string): Promise<void> {
     await this.page.fill('#search_product', term);
     await this.page.click('#submit_search');
-    await expect(
-      this.page.locator('h2', { hasText: 'Searched Products' }),
-    ).toBeVisible();
+    await expect(this.page.locator('h2', { hasText: 'Searched Products' })).toBeVisible();
   }
 
   async count(): Promise<number> {
@@ -47,6 +43,8 @@ export class ProductsPage extends BasePage {
   }
 
   async firstProductName(): Promise<string> {
-    return (await this.productCards().first().locator('.productinfo p').innerText()).trim();
+    return (
+      await this.productCards().first().locator('.productinfo p').innerText()
+    ).trim();
   }
 }
