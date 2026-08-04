@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.local
+
+# Playwright artifacts
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# AI outputs
+ai-summary.md
+
+# OS / editor
+.DS_Store
+*.log

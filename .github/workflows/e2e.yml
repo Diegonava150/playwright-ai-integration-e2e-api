@@ -1,0 +1,56 @@
+name: Playwright E2E + API
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run API + E2E + Hybrid suites
+        run: npx playwright test --project=api --project=e2e --project=hybrid
+
+      # AI failure triage. Runs on failure; needs the secret to actually call
+      # Claude, otherwise it prints a plain list and exits 0 (never blocks CI).
+      - name: AI failure summary
+        if: always()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npm run ai:summary
+
+      - name: Publish AI summary to job step summary
+        if: always()
+        run: cat ai-summary.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload AI summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-summary
+          path: ai-summary.md
+          retention-days: 14

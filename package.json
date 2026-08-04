@@ -1,0 +1,31 @@
+{
+  "name": "playwright-ai-integration-e2e-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright E2E + API framework for automationexercise.com with high AI integration (MCP, AI test-gen, in-test LLM assertions, AI CI reporting).",
+  "scripts": {
+    "test": "playwright test",
+    "test:e2e": "playwright test --project=e2e",
+    "test:api": "playwright test --project=api",
+    "test:hybrid": "playwright test --project=hybrid",
+    "test:ai": "playwright test --grep @ai",
+    "test:ai:oauth": "tsx scripts/run-ai-oauth.ts",
+    "test:headed": "playwright test --project=e2e --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "ai:summary": "tsx scripts/ai-failure-summary.ts",
+    "codegen": "playwright codegen https://www.automationexercise.com",
+    "install:browsers": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0"
+  }
+}
