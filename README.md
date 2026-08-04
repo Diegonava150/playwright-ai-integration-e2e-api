@@ -1,5 +1,7 @@
 # Playwright AI E2E + API Framework
 
+[![Playwright E2E + API](https://github.com/Diegonava150/playwright-ai-integration-e2e-api/actions/workflows/e2e.yml/badge.svg)](https://github.com/Diegonava150/playwright-ai-integration-e2e-api/actions/workflows/e2e.yml)
+
 A Playwright + TypeScript test framework for **[automationexercise.com](https://www.automationexercise.com)**
 — chosen because it exposes **both** a full e-commerce UI (register → browse →
 cart → checkout → order) and a documented **REST API**, so one project genuinely
@@ -129,7 +131,12 @@ data), and writes `ai-summary.md`. In CI it's posted to the GitHub job summary
 **and upserted as a PR comment** (with a link to the full HTML report + traces).
 
 The CI pipeline runs a **sharded matrix**, uploads each shard's blob report, then
-a `merge` job combines them into one HTML + JSON report before AI triage.
+a `merge` job combines them into one HTML + JSON report before AI triage. A
+separate `quality` job runs typecheck + lint + format-check on every push/PR.
+
+To enable AI triage in CI, add an **`ANTHROPIC_API_KEY`** repository secret
+(Settings → Secrets and variables → Actions → New repository secret). Without it,
+the summary step posts the plain failure list and the pipeline still passes.
 
 ## Configuration
 

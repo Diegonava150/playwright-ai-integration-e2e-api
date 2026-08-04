@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "description": "Playwright E2E + API framework for automationexercise.com with high AI integration (MCP, AI test-gen, in-test LLM assertions, AI CI reporting).",
   "scripts": {
     "test": "playwright test",
