@@ -22,6 +22,8 @@ const CRITICAL_BASELINE = new Set<string>([
 async function auditNoNewCritical(page: Page, testInfo: TestInfo) {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa'])
+    // Ignore third-party ad/consent iframes — we audit the app, not their DOM.
+    .exclude('iframe')
     .analyze();
 
   await testInfo.attach('axe-violations.json', {

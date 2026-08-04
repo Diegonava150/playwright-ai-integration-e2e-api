@@ -3,16 +3,28 @@ import { Page, Locator, expect } from '@playwright/test';
 export class BasePage {
   constructor(protected readonly page: Page) {}
 
-  protected consentButton(): Locator {
-    // automationexercise shows a Google "consent to cookies" iframe on some runs.
-    return this.page.locator('button:has-text("Consent"), .fc-cta-consent');
-  }
-
-  /** Dismiss the cookie/consent overlay if present so it doesn't eat clicks. */
+  /**
+   * Dismiss the Google "funding choices" cookie-consent overlay if present.
+   * On datacenter IPs (e.g. CI runners) this overlay appears and blocks clicks;
+   * it may be a same-document element or live inside a consent iframe.
+   * Best-effort and fast — never throws.
+   */
   async dismissConsentIfPresent(): Promise<void> {
-    const btn = this.consentButton().first();
-    if (await btn.isVisible().catch(() => false)) {
-      await btn.click().catch(() => undefined);
+    const selector =
+      '.fc-cta-consent, .fc-cta-do-not-consent, button:has-text("Consent")';
+
+    const inline = this.page.locator(selector).first();
+    if (await inline.isVisible().catch(() => false)) {
+      await inline.click().catch(() => undefined);
+      return;
+    }
+
+    const frame = this.page
+      .frameLocator('iframe[src*="fundingchoices" i], iframe[title*="consent" i]')
+      .first();
+    const frameBtn = frame.locator(selector).first();
+    if (await frameBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await frameBtn.click().catch(() => undefined);
     }
   }
 
