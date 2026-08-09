@@ -179,7 +179,7 @@ jobs:
       # Post the AI triage as a PR comment (upsert by a hidden marker).
       - name: Comment AI summary on PR
         if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
