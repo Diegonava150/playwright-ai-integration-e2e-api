@@ -21,7 +21,7 @@ jobs:
       - name: Generate baselines
         run: npm run test:visual:update
       - name: Upload baselines
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: visual-baselines
           path: tests/visual/__screenshots__/
