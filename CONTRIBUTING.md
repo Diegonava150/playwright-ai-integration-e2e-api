@@ -65,13 +65,17 @@ checks (`Lint · Typecheck · Format`, `Unit tests (Vitest)`,
 and the branch up to date, and force-pushes/deletions are blocked. The repo admin
 is on the bypass list for hotfixes.
 
-GitHub does **not** auto-apply this file. Apply or update it with `gh`:
+GitHub does **not** auto-apply this file. It's already applied to this repo as
+ruleset **20610171**. To update after editing the JSON:
 
 ```bash
-# first time
-gh api -X POST repos/<owner>/<repo>/rulesets --input .github/rulesets/main.json
+gh api -X PUT repos/Diegonava150/playwright-ai-integration-e2e-api/rulesets/20610171 \
+  --input .github/rulesets/main.json
+```
 
-# update an existing ruleset (get <id> from the list)
-gh api repos/<owner>/<repo>/rulesets
-gh api -X PUT repos/<owner>/<repo>/rulesets/<id> --input .github/rulesets/main.json
+For a fresh repo (e.g. a fork), create it and note the new id from the response:
+
+```bash
+gh api -X POST repos/<owner>/<repo>/rulesets --input .github/rulesets/main.json
+gh api repos/<owner>/<repo>/rulesets   # list ids
 ```
