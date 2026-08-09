@@ -15,3 +15,6 @@ ai-summary.md
 # OS / editor
 .DS_Store
 *.log
+
+# Claude Code per-developer local settings (not project config)
+.claude/settings.local.json
