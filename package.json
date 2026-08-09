@@ -49,23 +49,23 @@
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.49.0",
-    "@types/node": "^22.10.0",
-    "cross-env": "^7.0.3",
-    "dotenv": "^16.4.7",
-    "eslint": "^9.39.5",
-    "eslint-config-prettier": "^9.1.2",
+    "@types/node": "^26.2.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-playwright": "^2.11.0",
-    "globals": "^15.15.0",
+    "globals": "^17.9.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.2",
+    "lint-staged": "^17.3.0",
     "prettier": "^3.9.6",
-    "tsx": "^4.19.2",
+    "tsx": "^4.23.11",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.66.0",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   }
 }
