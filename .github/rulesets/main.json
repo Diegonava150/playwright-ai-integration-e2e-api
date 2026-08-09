@@ -29,9 +29,7 @@
         "required_status_checks": [
           { "context": "Lint · Typecheck · Format" },
           { "context": "Unit tests (Vitest)" },
-          { "context": "Secret scan (gitleaks)" },
-          { "context": "Tests (shard 1/2)" },
-          { "context": "Tests (shard 2/2)" }
+          { "context": "Secret scan (gitleaks)" }
         ]
       }
     }

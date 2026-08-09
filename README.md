@@ -198,6 +198,30 @@ CI (Ubuntu) needs Linux baselines. Generate them one of two ways:
 
 `npm run test:visual:update` on your own OS produces baselines for that OS only.
 
+## Running against the live site in CI
+
+**automationexercise.com serves an anti-bot JavaScript challenge to datacenter
+IPs** (GitHub-hosted runners included) — an HTTP 200 "…your request is being
+verified…" page instead of the app/API, which a headless browser can't clear
+(the challenge fails when `navigator.webdriver` is true). It affects the API and
+the browser equally, since it's an edge/IP block. Residential IPs aren't
+challenged, so the suites pass locally.
+
+The framework handles this honestly rather than trying to evade bot protection:
+
+- A **preflight** job probes the target. If it's blocking the runner, the
+  live-site suites (`api` / `e2e` / `e2e-auth` / `hybrid` / `a11y`) are **skipped
+  with a warning annotation** instead of failing the build.
+- The **always-on gates** — `quality` (lint/typecheck/format), `unit` (Vitest),
+  and `secrets-scan` (gitleaks) — need no network and run on every push/PR. These
+  are the required checks for branch protection.
+- `global-setup` also detects the challenge and fails locally with a clear message
+  if you ever hit it (e.g. on a VPN/datacenter IP).
+
+To actually run the live suites in CI, point `BASE_URL` at a target that doesn't
+block automation (a self-hosted instance, a residential/proxy runner, or a
+different demo site).
+
 ## Notes
 
 automationexercise.com is a shared public sandbox: tests create unique accounts

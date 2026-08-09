@@ -59,11 +59,16 @@ Keep them focused, ensure the checks above pass, and fill in the PR template.
 ## Branch protection
 
 `main` is protected by a ruleset defined as code in
-[`.github/rulesets/main.json`](.github/rulesets/main.json): PR required, the CI
-checks (`Lint · Typecheck · Format`, `Unit tests (Vitest)`,
-`Secret scan (gitleaks)`, `Tests (shard 1/2)`, `Tests (shard 2/2)`) must be green
-and the branch up to date, and force-pushes/deletions are blocked. The repo admin
-is on the bypass list for hotfixes.
+[`.github/rulesets/main.json`](.github/rulesets/main.json): PR required, the
+environment-independent CI checks (`Lint · Typecheck · Format`,
+`Unit tests (Vitest)`, `Secret scan (gitleaks)`) must be green and the branch up
+to date, and force-pushes/deletions are blocked. The repo admin is on the bypass
+list for hotfixes.
+
+The live-site suites are intentionally **not** required checks: the demo target
+blocks datacenter IPs (see README → "Running against the live site in CI"), so
+those jobs skip on CI runners and would otherwise leave required checks pending
+forever.
 
 GitHub does **not** auto-apply this file. It's already applied to this repo as
 ruleset **20610171**. To update after editing the JSON:
