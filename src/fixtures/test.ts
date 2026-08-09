@@ -4,6 +4,7 @@ import { AuthPage } from '../pages/auth.page.js';
 import { ProductsPage } from '../pages/products.page.js';
 import { CartPage } from '../pages/cart.page.js';
 import { CheckoutPage } from '../pages/checkout.page.js';
+import { ProductDetailPage } from '../pages/product-detail.page.js';
 import { ApiClient } from '../api/api-client.js';
 import { aiExpectText, aiExpectVisual, type AiExpectOptions } from '../ai/ai-expect.js';
 import { hasCredentials } from '../ai/claude-client.js';
@@ -33,6 +34,7 @@ interface Fixtures {
   home: HomePage;
   auth: AuthPage;
   products: ProductsPage;
+  productDetail: ProductDetailPage;
   cart: CartPage;
   checkout: CheckoutPage;
   api: ApiClient;
@@ -49,6 +51,7 @@ export const test = base.extend<Fixtures>({
   home: async ({ page }, use) => use(new HomePage(page)),
   auth: async ({ page }, use) => use(new AuthPage(page)),
   products: async ({ page }, use) => use(new ProductsPage(page)),
+  productDetail: async ({ page }, use) => use(new ProductDetailPage(page)),
   cart: async ({ page }, use) => use(new CartPage(page)),
   checkout: async ({ page }, use) => use(new CheckoutPage(page)),
 
@@ -67,11 +70,18 @@ export const test = base.extend<Fixtures>({
     await use(user);
 
     // Teardown — runs even on test failure. Best-effort; never masks the
-    // original test error.
+    // original test error, but warn so a leaked account is visible.
     try {
-      await client.deleteAccount(user.email, user.password);
-    } catch {
-      // Account may already be gone (e.g. a delete-account test); ignore.
+      const res = await client.deleteAccount(user.email, user.password);
+      if (res.responseCode !== 200) {
+        console.warn(
+          `[registeredUser] cleanup returned ${res.responseCode} for ${user.email} — account may be leaked.`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `[registeredUser] cleanup threw for ${user.email} (${(err as Error).message}) — account may be leaked.`,
+      );
     }
   },
 

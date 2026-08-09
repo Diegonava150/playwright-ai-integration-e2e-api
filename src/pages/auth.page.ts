@@ -79,6 +79,12 @@ export class AuthPage extends BasePage {
     ).toBeVisible();
   }
 
+  async expectEmailExistsError(): Promise<void> {
+    await expect(
+      this.page.locator('p', { hasText: 'Email Address already exist!' }),
+    ).toBeVisible();
+  }
+
   /** Deletes the current account (cleanup for registration tests). */
   async deleteAccount(): Promise<void> {
     await this.page.click('a[href="/delete_account"]');

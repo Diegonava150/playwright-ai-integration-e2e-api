@@ -15,6 +15,8 @@
     "test:api": "playwright test --project=api",
     "test:hybrid": "playwright test --project=hybrid",
     "test:a11y": "playwright test --project=a11y",
+    "test:unit": "cross-env AI_RETRY_BASE_MS=0 vitest run",
+    "test:unit:watch": "cross-env AI_RETRY_BASE_MS=0 vitest",
     "test:ai": "playwright test --grep @ai",
     "test:ai:oauth": "tsx scripts/run-ai-oauth.ts",
     "test:smoke": "playwright test --grep @smoke",
@@ -59,7 +61,8 @@
     "prettier": "^3.9.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.66.0"
+    "typescript-eslint": "^8.66.0",
+    "vitest": "^2.1.9"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

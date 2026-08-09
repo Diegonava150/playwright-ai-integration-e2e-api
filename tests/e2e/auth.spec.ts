@@ -17,6 +17,16 @@ test.describe('Authentication (E2E)', () => {
     await auth.expectLoginError();
   });
 
+  test('signup with an already-registered email is rejected', async ({
+    auth,
+    registeredUser,
+  }) => {
+    // registeredUser is provisioned (and cleaned up) via API by the fixture.
+    await auth.open();
+    await auth.startSignup('Duplicate User', registeredUser.email);
+    await auth.expectEmailExistsError();
+  });
+
   test('a registered user can log in and log out', async ({ auth, registeredUser }) => {
     // Account is provisioned via API by the `registeredUser` fixture, which also
     // deletes it in teardown — so this test focuses purely on the login flow and

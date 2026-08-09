@@ -14,6 +14,7 @@ export default tseslint.config(
       'playwright/.cache/',
       'playwright/.auth/',
       '**/*.d.ts',
+      '**/seed.spec.ts', // generated scratch scaffold for the test-generator agent
     ],
   },
   js.configs.recommended,

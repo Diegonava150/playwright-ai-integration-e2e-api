@@ -22,6 +22,24 @@ export class CartPage extends BasePage {
     await expect(this.rows().first()).toBeVisible();
   }
 
+  /** The quantity shown for a cart row (rendered as a disabled button). */
+  async quantityOf(index = 0): Promise<string> {
+    return (
+      await this.rows().nth(index).locator('.cart_quantity button').first().innerText()
+    ).trim();
+  }
+
+  /** Remove a row via its delete (×) control; the row detaches via AJAX. */
+  async removeItem(index = 0): Promise<void> {
+    const row = this.rows().nth(index);
+    await row.locator('.cart_quantity_delete').click();
+    await expect(row).toBeHidden();
+  }
+
+  async expectEmpty(): Promise<void> {
+    await expect(this.page.getByText('Cart is empty!')).toBeVisible();
+  }
+
   async proceedToCheckout(): Promise<void> {
     await this.page.click('a.check_out');
   }

@@ -9,6 +9,12 @@ on:
 env:
   SHARD_TOTAL: 2
 
+# Default token perms; the Pages job widens its own below.
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   quality:
     name: Lint · Typecheck · Format
@@ -29,6 +35,29 @@ jobs:
         run: npm run format:check
       - name: Audit (non-blocking)
         run: npm audit --audit-level=high || true
+
+  secrets-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: gitleaks (working tree)
+        run: >
+          docker run --rm -v "${{ github.workspace }}:/repo"
+          zricethezav/gitleaks:latest
+          detect --source=/repo --no-git --redact --verbose
+
+  unit:
+    name: Unit tests (Vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
 
   test:
     name: Tests (shard ${{ matrix.shard }}/2)
@@ -145,3 +174,28 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number, body });
             }
+
+  # Publish the merged HTML report to GitHub Pages (main pushes only).
+  # Requires Settings → Pages → Source: "GitHub Actions".
+  deploy-report:
+    name: Publish report to Pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [merge]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: playwright-report
+          path: playwright-report
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: playwright-report
+      - id: deploy
+        uses: actions/deploy-pages@v4

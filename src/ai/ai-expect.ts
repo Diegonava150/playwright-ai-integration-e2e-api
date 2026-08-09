@@ -1,5 +1,5 @@
 import { Page, expect } from '@playwright/test';
-import { askStructured, AI_MIN_CONFIDENCE } from './claude-client.js';
+import { askStructured, AI_MIN_CONFIDENCE, verdictPasses } from './claude-client.js';
 
 export interface AiExpectOptions {
   /** Minimum confidence (0..1) required to count as a pass. Defaults to AI_MIN_CONFIDENCE. */
@@ -93,19 +93,13 @@ export async function aiExpectVisual(
   assertVerdict(verdict, opts.minConfidence, 'visual ');
 }
 
-/**
- * A verdict passes only if the model says pass AND its confidence clears the
- * threshold — a low-confidence "pass" is treated as a failure, so borderline
- * LLM judgments don't silently go green.
- */
 function assertVerdict(
   verdict: Verdict,
   minConfidence = AI_MIN_CONFIDENCE,
   kind = '',
 ): void {
-  const ok = verdict.pass && verdict.confidence >= minConfidence;
   expect(
-    ok,
+    verdictPasses(verdict, minConfidence),
     `AI ${kind}assertion failed (pass=${verdict.pass}, confidence=${verdict.confidence} < ${minConfidence}): ${verdict.reason}`,
   ).toBe(true);
 }

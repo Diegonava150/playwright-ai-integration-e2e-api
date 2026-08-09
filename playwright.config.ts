@@ -25,12 +25,25 @@ const visual: Project[] = process.env.VISUAL
 
 export default defineConfig({
   testDir: './tests',
+  // seed.spec.ts is a scratch scaffold for the Playwright test-generator agent,
+  // not a real test — never run it.
+  testIgnore: ['**/seed.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   timeout: 60_000,
-  expect: { timeout: 10_000 },
+  expect: {
+    timeout: 10_000,
+    toHaveScreenshot: { maxDiffPixelRatio: 0.02, animations: 'disabled' },
+  },
+
+  // Baselines are namespaced by {projectName} and {platform}: a screenshot taken
+  // on Windows (…-win32.png) is NEVER used to match one on Linux (…-linux.png).
+  // So CI (Ubuntu) needs Linux baselines — generate them with the
+  // `visual-baselines` workflow or the Docker command in the README.
+  snapshotPathTemplate:
+    'tests/visual/__screenshots__/{testFileName}/{arg}{-projectName}-{platform}{ext}',
 
   // Fail fast if the target site is down.
   globalSetup: './src/global-setup.ts',

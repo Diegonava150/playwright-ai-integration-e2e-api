@@ -80,10 +80,15 @@ Conventions added since the base guide:
 - A Google consent iframe sometimes appears; `BasePage.dismissConsentIfPresent()`
   handles it.
 
-## Using the Playwright MCP server
+## Using the Playwright MCP server & agents
 
-The MCP server (`@playwright/mcp`) lets you open pages, snapshot the accessibility
-tree, click, and read the real DOM. Recommended loop when authoring a new test:
+`.mcp.json` registers two servers: `playwright` (`@playwright/mcp`, drive a real
+browser) and `playwright-test` (run/debug tests). The official agents in
+`.claude/agents/` — **planner**, **generator**, **healer** — plus the prompt
+templates in `.claude/prompts/` orchestrate them. `tests/e2e/seed.spec.ts` is the
+generator's scratch scaffold (excluded from runs via `testIgnore`).
+
+Recommended loop when authoring a new test:
 
 1. Navigate to the target page and take a snapshot.
 2. Confirm the selectors in the relevant Page Object still match.

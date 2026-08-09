@@ -1,0 +1,28 @@
+name: Visual baselines (Linux)
+
+# Manually generate Linux visual-regression baselines that match the CI runner.
+# Run this, download the `visual-baselines` artifact, and commit the files under
+# tests/visual/__screenshots__/ (or run locally via the Docker command in README).
+
+on:
+  workflow_dispatch:
+
+jobs:
+  baselines:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Generate baselines
+        run: npm run test:visual:update
+      - name: Upload baselines
+        uses: actions/upload-artifact@v5
+        with:
+          name: visual-baselines
+          path: tests/visual/__screenshots__/
+          retention-days: 7

@@ -43,10 +43,30 @@ export function hasCredentials(): boolean {
 /** Minimum confidence an AI verdict needs to count as a pass (0..1). */
 export const AI_MIN_CONFIDENCE = Number(process.env.AI_MIN_CONFIDENCE ?? '0.7');
 
-// Transient HTTP statuses worth retrying with backoff.
-const TRANSIENT_STATUS = new Set([408, 409, 429, 500, 502, 503, 529]);
+/**
+ * Pure decision for an AI verdict: passes only if the model says pass AND its
+ * confidence clears the threshold, so a low-confidence "pass" fails. Lives here
+ * (not in ai-expect) so it's unit-testable without pulling in Playwright.
+ */
+export function verdictPasses(
+  verdict: { pass: boolean; confidence: number },
+  minConfidence = AI_MIN_CONFIDENCE,
+): boolean {
+  return verdict.pass && verdict.confidence >= minConfidence;
+}
 
-async function withRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
+// Transient HTTP statuses worth retrying with backoff.
+export const TRANSIENT_STATUS = new Set([408, 409, 429, 500, 502, 503, 529]);
+
+// Base backoff (ms). Overridable so unit tests can run retries with no delay.
+const RETRY_BASE_MS = Number(process.env.AI_RETRY_BASE_MS ?? '500');
+
+/**
+ * Retry `fn` with exponential backoff on transient failures (network errors or
+ * transient HTTP statuses). Non-transient errors (e.g. 400/401/403) throw
+ * immediately. Exported for unit testing.
+ */
+export async function withRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt < tries; attempt++) {
     try {
@@ -57,8 +77,8 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
       // Retry network errors (no status) and transient server statuses only.
       const transient = status === undefined || TRANSIENT_STATUS.has(status);
       if (!transient || attempt === tries - 1) throw err;
-      const backoffMs = Math.min(8000, 500 * 2 ** attempt);
-      await new Promise((r) => setTimeout(r, backoffMs));
+      const backoffMs = Math.min(8000, RETRY_BASE_MS * 2 ** attempt);
+      if (backoffMs > 0) await new Promise((r) => setTimeout(r, backoffMs));
     }
   }
   throw lastErr;

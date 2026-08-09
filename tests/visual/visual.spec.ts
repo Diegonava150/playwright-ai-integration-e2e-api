@@ -3,8 +3,11 @@ import { test, expect } from '../../src/fixtures/test.js';
 /**
  * Deterministic pixel-diff visual regression (distinct from the AI *semantic*
  * visual check in tests/ai). Opt-in: only registered when VISUAL=1, because it
- * needs committed baselines. Generate them once with:
- *   VISUAL=1 npx playwright test --project=visual --update-snapshots
+ * needs committed baselines. Generate them with `npm run test:visual:update`.
+ *
+ * IMPORTANT: baselines are per-platform. Ones made on Windows won't satisfy CI
+ * (Linux). Generate Linux baselines via the `visual-baselines` GitHub workflow
+ * or the Docker command in the README so local and CI agree.
  *
  * Dynamic regions (ad iframes, carousel) are masked to reduce flakiness.
  */
