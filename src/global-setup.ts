@@ -4,32 +4,26 @@
  *
  * automationexercise.com serves an anti-bot JS challenge ("...your request is
  * being verified...") to datacenter IPs and headless automation, which returns
- * HTTP 200 with a challenge page instead of the app/API. We detect that here so
- * the failure is legible. In CI the live-site suites are skipped upstream by a
- * preflight step (see .github/workflows/e2e.yml), so this rarely fires there.
+ * HTTP 200 with a challenge page instead of the app/API.
+ *
+ * The detection itself lives in `reachability.ts` because CI's preflight has to
+ * reach the same verdict, and previously did not — it probed with a spoofed
+ * browser user agent, was let through, and cleared a run that then failed here
+ * on the very challenge it was supposed to catch. Both now call one function,
+ * so the two cannot answer differently.
  */
+import { probeTarget } from './reachability.js';
+
 async function globalSetup(): Promise<void> {
   const base = process.env.BASE_URL ?? 'https://www.automationexercise.com';
-  let body = '';
-  try {
-    const res = await fetch(`${base}/api/productsList`);
-    body = await res.text();
-  } catch (err) {
-    throw new Error(
-      `[global-setup] Could not reach ${base} (${(err as Error).message}). ` +
-        'Check connectivity before retrying.',
-    );
-  }
+  const result = await probeTarget(base);
 
-  if (!body.includes('"responseCode"')) {
-    const blocked = /request is being verified|One moment, please/i.test(body);
+  if (!result.reachable) {
     throw new Error(
-      `[global-setup] ${base} is not returning real content — ` +
-        (blocked
-          ? 'the demo site is serving an anti-bot challenge. It blocks automated/datacenter ' +
-            'traffic (incl. headless browsers and CI runners); run from a residential IP. ' +
-            'CI skips the live-site suites automatically via the workflow preflight.'
-          : 'unexpected response shape. The site may be down or changed.'),
+      `[global-setup] ${base} is not returning real content — ${result.detail}` +
+        (result.blocked
+          ? ' CI skips the live-site suites automatically via the workflow preflight.'
+          : ''),
     );
   }
 

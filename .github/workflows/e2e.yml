@@ -109,17 +109,25 @@ jobs:
     outputs:
       blocked: ${{ steps.probe.outputs.blocked }}
     steps:
+      # Runs the same probe global-setup runs, from src/reachability.ts.
+      #
+      # It used to be a curl one-liner carrying -A "Mozilla/5.0 (X11; Linux x86_64)". The
+      # anti-bot decides by who is asking, so the spoofed request was served real content while
+      # global-setup's plain fetch was served the challenge: this gate reported "reachable" and
+      # then the run it had cleared died on the block it exists to detect. The failure read as a
+      # regression in the suite, which is the expensive kind of wrong answer.
+      #
+      # Sharing the implementation is the point. Two copies kept in step by hand drift again, and
+      # this drift raised no error of its own — both halves worked, they just answered different
+      # questions.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - id: probe
-        run: |
-          curl -s -m 30 -A "Mozilla/5.0 (X11; Linux x86_64)" \
-            https://www.automationexercise.com/api/productsList -o body.txt || true
-          if grep -q '"responseCode"' body.txt 2>/dev/null; then
-            echo "blocked=false" >> "$GITHUB_OUTPUT"
-            echo "Target returned real API content — running live-site suites."
-          else
-            echo "blocked=true" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Live suites skipped::automationexercise.com is serving an anti-bot challenge to this runner; the api/e2e/e2e-auth/hybrid/a11y suites are skipped. They run locally (residential IP). Unit, lint, typecheck and secret-scan gates still enforce quality here."
-          fi
+        run: npx tsx scripts/preflight.ts
 
   test:
     name: Tests (shard ${{ matrix.shard }}/2)
