@@ -1,4 +1,5 @@
 import { test as base, expect, APIRequestContext } from '@playwright/test';
+import { probeTarget, type Reachability } from '../reachability.js';
 import { HomePage } from '../pages/home.page.js';
 import { AuthPage } from '../pages/auth.page.js';
 import { ProductsPage } from '../pages/products.page.js';
@@ -45,9 +46,62 @@ interface Fixtures {
    * mid-test failure never leaks an account into the shared sandbox.
    */
   registeredUser: NewUser;
+  /** Auto fixture. Skips the test when this runner is being served the challenge. */
+  skipWhenTargetBlocked: void;
 }
 
-export const test = base.extend<Fixtures>({
+interface WorkerFixtures {
+  /** Whether the target is usable *from this worker's machine*. Probed once per worker. */
+  targetStatus: Reachability;
+}
+
+const BASE_URL = process.env.BASE_URL ?? 'https://www.automationexercise.com';
+
+export const test = base.extend<Fixtures, WorkerFixtures>({
+  /**
+   * Asked once per worker, on the machine that is about to run the tests.
+   *
+   * <p>That last part is the whole point. CI used to decide this in a separate
+   * `preflight` job and pass a boolean down, but that job runs on its own runner
+   * with its own IP, and automationexercise.com blocks by IP. A green preflight
+   * therefore said "some other machine could reach the site" — which is not a
+   * fact about this one. A shard failed on the challenge after the gate had
+   * cleared it, and the failure read as a bug in the suite.
+   *
+   * <p>Answering it here removes the second opinion rather than reconciling it.
+   * There is no cross-machine claim left to be wrong.
+   */
+  targetStatus: [
+    // Playwright's fixture signature; this one depends on no other fixture.
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
+      await use(await probeTarget(BASE_URL));
+    },
+    { scope: 'worker' },
+  ],
+
+  /**
+   * Skip — not fail — when the block is what stopped us.
+   *
+   * <p>The distinction is the one {@link probeTarget} already draws. Being served
+   * an anti-bot challenge is a fact about the runner's IP and says nothing about
+   * the code, so failing on it trains everyone to ignore a red build. The site
+   * being down or answering with something unrecognised is a real signal, and
+   * global-setup still throws on those before any of this runs.
+   */
+  skipWhenTargetBlocked: [
+    async ({ targetStatus }, use, testInfo) => {
+      if (!targetStatus.reachable && targetStatus.blocked) {
+        testInfo.skip(
+          true,
+          `${BASE_URL} is serving an anti-bot challenge to this runner — ${targetStatus.detail}`,
+        );
+      }
+      await use();
+    },
+    { auto: true },
+  ],
+
   home: async ({ page }, use) => use(new HomePage(page)),
   auth: async ({ page }, use) => use(new AuthPage(page)),
   products: async ({ page }, use) => use(new ProductsPage(page)),

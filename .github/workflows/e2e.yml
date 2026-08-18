@@ -99,40 +99,8 @@ jobs:
       - run: npm ci
       - run: npm run test:unit
 
-  # The public demo (automationexercise.com) serves an anti-bot JS challenge to
-  # datacenter IPs (incl. GitHub runners), so the live-site suites can't run here.
-  # Detect that and skip them gracefully instead of failing the build. They run
-  # locally (residential IP) — that's where they're green.
-  preflight:
-    name: Preflight (target reachable?)
-    runs-on: ubuntu-latest
-    outputs:
-      blocked: ${{ steps.probe.outputs.blocked }}
-    steps:
-      # Runs the same probe global-setup runs, from src/reachability.ts.
-      #
-      # It used to be a curl one-liner carrying -A "Mozilla/5.0 (X11; Linux x86_64)". The
-      # anti-bot decides by who is asking, so the spoofed request was served real content while
-      # global-setup's plain fetch was served the challenge: this gate reported "reachable" and
-      # then the run it had cleared died on the block it exists to detect. The failure read as a
-      # regression in the suite, which is the expensive kind of wrong answer.
-      #
-      # Sharing the implementation is the point. Two copies kept in step by hand drift again, and
-      # this drift raised no error of its own — both halves worked, they just answered different
-      # questions.
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - id: probe
-        run: npx tsx scripts/preflight.ts
-
   test:
     name: Tests (shard ${{ matrix.shard }}/2)
-    needs: [preflight]
-    if: needs.preflight.outputs.blocked == 'false'
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
@@ -170,9 +138,11 @@ jobs:
 
   merge:
     name: Merge reports + AI triage
-    needs: [preflight, test]
-    if: always() && needs.preflight.outputs.blocked == 'false'
+    needs: [test]
+    if: always()
     runs-on: ubuntu-latest
+    outputs:
+      executed: ${{ steps.executed.outputs.executed }}
     steps:
       - uses: actions/checkout@v7
 
@@ -195,6 +165,34 @@ jobs:
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
         run: npx playwright merge-reports --config playwright.config.ts ./all-blob-reports
+
+      # Did anything actually execute, or did every test skip because this runner was
+      # being served the challenge?
+      #
+      # The gate that used to answer this was the preflight job, and it answered it about a
+      # different machine. Reading it off the report instead is both correct and unfalsifiable:
+      # the report is the record of what ran.
+      #
+      # Only Pages publication depends on the answer — an all-skipped run must not overwrite a
+      # real published report with an empty one.
+      - name: Did any test run
+        id: executed
+        if: always()
+        run: |
+          executed=$(python3 - <<'PY'
+          import json
+          try:
+              stats = json.load(open('test-results/results.json'))['stats']
+          except Exception:
+              print('false'); raise SystemExit
+          ran = stats.get('expected', 0) + stats.get('unexpected', 0) + stats.get('flaky', 0)
+          print('true' if ran > 0 else 'false')
+          PY
+          )
+          echo "executed=$executed" >> "$GITHUB_OUTPUT"
+          if [ "$executed" = "false" ]; then
+            echo "::notice title=Live suites skipped::Every test skipped — this runner is being served the anti-bot challenge. Pages publication is skipped so the existing report is not replaced with an empty one."
+          fi
 
       - name: Upload merged HTML report
         if: always()
@@ -251,8 +249,10 @@ jobs:
   # Requires Settings → Pages → Source: "GitHub Actions".
   deploy-report:
     name: Publish report to Pages
-    needs: [preflight, merge]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.preflight.outputs.blocked == 'false'
+    needs: [merge]
+    if: >
+      github.ref == 'refs/heads/main' && github.event_name == 'push'
+      && needs.merge.outputs.executed == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write
