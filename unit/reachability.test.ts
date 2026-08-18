@@ -81,17 +81,27 @@ describe('probeTarget', () => {
   });
 });
 
-describe('global-setup and the CI preflight agree', () => {
-  // The two used to disagree, and nothing failed when they did: each worked, they
-  // simply asked different questions. Sharing probeTarget is what makes the
-  // disagreement impossible, so this asserts the shared call rather than the wording
-  // of either message.
-  it('global-setup throws exactly when the probe reports unreachable', async () => {
+describe('global-setup treats a block differently from a fault', () => {
+  // The point of the split. Being served the challenge is a fact about this
+  // machine's IP and says nothing about the code, so it must not fail the build —
+  // the skipWhenTargetBlocked fixture skips each test instead, which puts the
+  // reason next to the tests it explains. A site that is down or answering with
+  // something unrecognised is a real signal with no sensible way to continue.
+  //
+  // Conflating the two is what CI used to do, and it is why a red build here
+  // stopped meaning anything.
+  it('does not fail the run when the target is merely blocking this machine', async () => {
     mockFetch(CHALLENGE_PAGE);
-    await expect(globalSetup()).rejects.toThrow(/anti-bot/i);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    await expect(globalSetup()).resolves.toBeUndefined();
   });
 
-  it('global-setup proceeds exactly when the probe reports reachable', async () => {
+  it('does fail the run when the target is down or unrecognisable', async () => {
+    mockFetch('<html>503 Service Unavailable</html>');
+    await expect(globalSetup()).rejects.toThrow(/not returning real content/i);
+  });
+
+  it('proceeds when the target is reachable', async () => {
     mockFetch(REAL_API);
     vi.spyOn(console, 'log').mockImplementation(() => {});
     await expect(globalSetup()).resolves.toBeUndefined();
